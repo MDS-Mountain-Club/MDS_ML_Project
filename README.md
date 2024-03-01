@@ -14,7 +14,7 @@ The [energy dataset](https://github.com/MDS-Mountain-Club/MDS_ML_Project/blob/ma
 
 The [weather dataset](https://github.com/MDS-Mountain-Club/MDS_ML_Project/blob/main/Data/weather_features.csv) contains *variables* for each of the five different *city_name*:
 
--   ***dt_iso***: Date and hour in ISO format,
+-   ***dt_iso***: Date and hour in ISO format from 2015-01-01 to 2018-12-31
 -   ***wind_speed*** (m/s) and ***wind_deg*** (°)
 -   ***humidity***: Relative humidity (%)
 -   ***rain_1h***: Rainfall (last hour, mm) as well as ***rain_3h*** and *snow_3h* (last 3 hours, mm)
