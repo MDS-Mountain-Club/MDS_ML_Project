@@ -1,6 +1,6 @@
-# MDS_ML_Project
+# Spain Energy Renewables
 
-This repository is for the development of our ML group project for Machine Learning (C24) course taken at the Hertie School in Spring 2024. Group members are: Daniyar Imanaliev, Johannes Müller, Lonny Chen, Minho Kang,
+This repository is for the development of our group project for the **Machine Learning (C24)** course taken as part of the **Master of Data Science for Public Policy (MDS)** program at **The Hertie School** in Spring 2024, taught by Professor Drew Dimmery. Group members are: Daniyar Imanaliev, Johannes Müller, Lonny Chen, Minho Kang,
 
 We take data from the Kaggle set ["Hourly energy generation and weather" in Spain](https://www.kaggle.com/datasets/nicholasjhana/energy-consumption-generation-prices-and-weather), which has pre-downloaded Data from the [ENTSO-E](https://uat-transparency.entsoe.eu/dashboard/show) platform together with weather data purchased by the original poster from [Open Weather API](#0).
 
