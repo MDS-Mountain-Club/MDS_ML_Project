@@ -1,0 +1,3 @@
+model,param,objective,scoring,random_state,MSE,MAE,RMSE,MAPE
+<function XGB_flex at 0x2a4f3b6a0>,"{'alpha': 10, 'colsample_bytree': 0.9, 'learning_rate': 0.1, 'max_depth': 7, 'n_estimators': 100}",reg:tweedie,neg_mean_squared_error,42,156785.77444803895,241.06949991023177,395.9618345851516,1.288077847765328
+<function XGB_flex at 0x2a4f3b6a0>,"{'alpha': 7, 'colsample_bytree': 0.9, 'learning_rate': 0.05, 'max_depth': 12, 'n_estimators': 120}",reg:absoluteerror,neg_mean_squared_error,42,152618.4634061965,242.4674470083743,390.66413119993047,1.8193969661679925
