@@ -7,6 +7,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+#################################
+
+def df_convert_dtypes(df, convert_from, convert_to):
+    '''Convert from one data type to another'''
+    cols = df.select_dtypes(include=[convert_from]).columns
+    for col in cols:
+        df[col] = df[col].values.astype(convert_to)
+    return df
 
 #################################
 
