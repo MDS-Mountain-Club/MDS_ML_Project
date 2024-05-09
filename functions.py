@@ -18,6 +18,58 @@ def df_convert_dtypes(df, convert_from, convert_to):
 
 #################################
 
+def hist_text(ax, x_loc, y_loc, col, deci, size, full=True, title=''):
+    '''Prints historgram statistics onto subplot.
+    Adapted from https://github.com/lonnychen/necta-psle-dashboard.
+    Parameters;
+        ax (subplot): Matplotlib subplot to add text to
+        x_loc (int, float): horizontal location to add text at
+        y_loc (int, float): vertical location to add text at
+        col (Series): DataFrame column to calculate statistics on
+        deci (int): decimal places for rounding statistics
+        size (string): Matplotlib text size string from 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'
+        full (bool): prints all stats, else just basic ones
+        title (string): Optional title
+    Returns:
+        None
+    '''
+    if full:
+        ax.text(x_loc, y_loc, f'''{title}
+        mean = {round(col.mean(), deci)}
+        median = {round(col.median(), deci)}
+        std = {round(col.std(), deci)}
+        std/mean = {round(col.std()/col.mean(), deci)}
+        skew = {round(col.skew(), deci)}
+        kurtosis = {round(col.kurtosis(), deci)}''', size=size)
+    else:
+        ax.text(x_loc, y_loc, f'''{title}
+        mean = {round(col.mean(), deci)}
+        median = {round(col.median(), deci)}
+        std = {round(col.std(), deci)}''', size=size)
+
+#################################
+
+def box_text(ax, x_loc, y_loc, col, deci, size, title=''):
+    '''Prints box plot statistics onto subplot.
+     Adapted from https://github.com/lonnychen/necta-psle-dashboard.
+    Parameters;
+        ax (subplot): Matplotlib subplot to add text to
+        x_loc (int, float): horizontal location to add text at
+        y_loc (int, float): vertical location to add text at
+        col (Series): DataFrame column to calculate statistics on
+        deci (int): decimal places for rounding values
+        size (string): Matplotlib text size string from 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'
+        title (string): Optional title
+    Returns:
+        None
+    '''
+    
+    ax.text(x_loc, y_loc, f'''
+    {title}
+    {col.describe().round(deci)}''', size=size)
+
+#################################
+    
 # Split the data into train and test based on specific time
 def split_by_date(X, train_end_date):
     if not isinstance(train_end_date, pd.Timestamp):
@@ -73,3 +125,4 @@ def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
     X_test = pd.DataFrame(X_test_scaled, index=X_test.index, columns=X_test.columns)
 
     return X_train, X_test, y_train, y_test
+
