@@ -179,3 +179,16 @@ def regression_coef_plot(model, fig, axes, filter_val=0, title=''):
     plt.xticks(rotation=90, fontsize=8)
     plt.xlim([-1, len(ols_coef_sorted)])
     plt.xlabel('')
+
+###############################
+        
+def polynomial_terms(df_in, features_in, max_degree):
+    '''Creates polynomial terms for input list of features and degrees'''
+    df_out = df_in.copy()
+    degrees = np.arange(2, max_degree+1, 1)
+    for degree in degrees:
+        for feature in features_in:
+            feature_string = f'{feature}^{degree}'
+            df_out[feature_string] = df_in[feature].apply(lambda x: x**degree)
+            
+    return df_out
