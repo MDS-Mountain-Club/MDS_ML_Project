@@ -1,16 +1,17 @@
 # Import libraries
+from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error, PredictionErrorDisplay
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error, PredictionErrorDisplay
 
 #################################
+
 
 def df_convert_dtypes(df, convert_from, convert_to):
     '''Convert from one data type to another'''
@@ -20,6 +21,7 @@ def df_convert_dtypes(df, convert_from, convert_to):
     return df
 
 #################################
+
 
 def hist_text(ax, x_loc, y_loc, col, deci, size, full=True, title=''):
     '''Prints historgram statistics onto subplot.
@@ -52,6 +54,7 @@ def hist_text(ax, x_loc, y_loc, col, deci, size, full=True, title=''):
 
 #################################
 
+
 def box_text(ax, x_loc, y_loc, col, deci, size, title=''):
     '''Prints box plot statistics onto subplot.
      Adapted from https://github.com/lonnychen/necta-psle-dashboard.
@@ -66,14 +69,16 @@ def box_text(ax, x_loc, y_loc, col, deci, size, title=''):
     Returns:
         None
     '''
-    
+
     ax.text(x_loc, y_loc, f'''
     {title}
     {col.describe().round(deci)}''', size=size)
 
 #################################
-    
+
 # Split the data into train and test based on specific time
+
+
 def split_by_date(X, train_end_date):
     if not isinstance(train_end_date, pd.Timestamp):
         train_end_date = pd.Timestamp(train_end_date)
@@ -81,7 +86,7 @@ def split_by_date(X, train_end_date):
     # Convert index of X and y to Timestamp objects if they are strings
     if isinstance(X.index[0], str):
         X.index = pd.to_datetime(X.index)
-        
+
     X_train = X[X.index <= train_end_date]
     X_test = X[X.index > train_end_date]
     return X_train, X_test
@@ -98,8 +103,7 @@ def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
         df['label_shifted'] = df[label].shift(-hours_ahead)
         # Drop the last "hours" rows as they have no label values
         df = df.iloc[:-hours_ahead]
-   
-    
+
     def split_by_date(X, train_end_date):
         if not isinstance(train_end_date, pd.Timestamp):
             train_end_date = pd.Timestamp(train_end_date)
@@ -122,57 +126,65 @@ def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
     # Standardize all columns except target
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
-    X_train = pd.DataFrame(X_train_scaled, index=X_train.index, columns=X_train.columns)
+    X_train = pd.DataFrame(
+        X_train_scaled, index=X_train.index, columns=X_train.columns)
 
     X_test_scaled = scaler.transform(X_test)
-    X_test = pd.DataFrame(X_test_scaled, index=X_test.index, columns=X_test.columns)
+    X_test = pd.DataFrame(
+        X_test_scaled, index=X_test.index, columns=X_test.columns)
 
     return X_train, X_test, y_train, y_test
 
 ###############################
 
+
 def add_model_eval(model_eval_in, model_name, y_test, y_pred):
     '''Adds sklearn.metrics to a model evaluation dictionary'''
-    
-    model_eval_out = model_eval_in.copy() #else side effects!
+
+    model_eval_out = model_eval_in.copy()  # else side effects!
     model_eval_out[model_name] = {'MSE': mean_squared_error(y_test, y_pred),
-                                 'RMSE': root_mean_squared_error(y_test, y_pred),
-                                 'R2': r2_score(y_test, y_pred),
-                                 'MAE': mean_absolute_error(y_test, y_pred),
-                                 'MAPE': mean_absolute_percentage_error(y_test, y_pred)}
+                                  'RMSE': root_mean_squared_error(y_test, y_pred),
+                                  'R2': r2_score(y_test, y_pred),
+                                  'MAE': mean_absolute_error(y_test, y_pred),
+                                  'MAPE': mean_absolute_percentage_error(y_test, y_pred)}
     return model_eval_out
 
 ###############################
 
+
 def model_eval_plot(y_true, y_pred, fig, axes, title=''):
     '''Plots key regression plots'''
-    
+
     # scikit-learn provided plots!
-    PredictionErrorDisplay.from_predictions(y_true=y_true, y_pred=y_pred, kind='actual_vs_predicted', ax=axes[0])
-    PredictionErrorDisplay.from_predictions(y_true=y_true, y_pred=y_pred, kind='residual_vs_predicted', ax=axes[1])
-    
+    PredictionErrorDisplay.from_predictions(
+        y_true=y_true, y_pred=y_pred, kind='actual_vs_predicted', ax=axes[0])
+    PredictionErrorDisplay.from_predictions(
+        y_true=y_true, y_pred=y_pred, kind='residual_vs_predicted', ax=axes[1])
+
     # Calculate residuals and plot on a histogram with text
     y_residuals = y_true - y_pred
     y_residuals.name = 'Residuals (actual - predicted)'
-    bins = round(np.cbrt(len(y_residuals))) #cube root
+    bins = round(np.cbrt(len(y_residuals)))  # cube root
     sns.histplot(x=y_residuals, bins=bins, ax=axes[2])
     x_loc = min(y_residuals)
-    y_loc = np.sqrt(len(y_residuals))*5 #crude!
+    y_loc = np.sqrt(len(y_residuals))*5  # crude!
     hist_text(axes[2], x_loc, y_loc, y_residuals, 1, 'small')
-    
+
     # Display niceties
     fig.suptitle(title)
     plt.tight_layout()
     plt.show()
-    
+
 ###############################
-    
+
+
 def regression_coef_plot(model, fig, axes, filter_val=0, title=''):
     '''Plots regression coefficients plot'''
     # Create sorted Series of coefficients and indices
-    ols_coef_sorted = pd.Series(model.coef_, index=model.feature_names_in_).sort_values(ascending=False)
+    ols_coef_sorted = pd.Series(
+        model.coef_, index=model.feature_names_in_).sort_values(ascending=False)
     ols_coef_sorted = ols_coef_sorted[abs(ols_coef_sorted) >= filter_val]
-    
+
     # Plot and style
     sns.barplot(x=ols_coef_sorted.index, y=ols_coef_sorted.values, ax=axes)
     plt.title(title)
@@ -181,7 +193,8 @@ def regression_coef_plot(model, fig, axes, filter_val=0, title=''):
     plt.xlabel('')
 
 ###############################
-        
+
+
 def polynomial_terms(df_in, features_in, max_degree):
     '''Creates polynomial terms for input list of features and degrees'''
     df_out = df_in.copy()
@@ -190,5 +203,47 @@ def polynomial_terms(df_in, features_in, max_degree):
         for feature in features_in:
             feature_string = f'{feature}^{degree}'
             df_out[feature_string] = df_in[feature].apply(lambda x: x**degree)
-            
+
     return df_out
+
+
+def split_by_date(X, train_end_date):
+    if not isinstance(train_end_date, pd.Timestamp):
+        train_end_date = pd.Timestamp(train_end_date)
+
+    # Convert index of X and y to Timestamp objects if they are strings
+    if isinstance(X.index[0], str):
+        X.index = pd.to_datetime(X.index)
+
+    X_train = X[X.index <= train_end_date]
+    X_test = X[X.index > train_end_date]
+
+    return X_train, X_test
+
+
+def plot_true_pred(X_test, test_pred, test_true):
+    plt.figure(figsize=(10, 6))
+    plt.plot(X_test.index, test_true, marker='o',
+             color='blue', label='True Values')
+    plt.plot(X_test.index, test_pred, marker='x', color='red',
+             linestyle='--', label='Predicted Values')
+    plt.title('True vs Predicted Values Over Time')
+    plt.xlabel('Time')
+    plt.ylabel('Values')
+    plt.legend()
+    plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def split_array(X_arr, y_arr, n_hours):
+    X, y = list(), list()
+    for window_start in range(len(X_arr)):
+        past_end = window_start + n_hours
+        if past_end + 1 > len(X_arr):
+            break
+        past, future = X_arr[window_start:past_end], y_arr[past_end]
+        X.append(past)
+        y.append(future)
+    return np.array(X), np.array(y)
