@@ -65,3 +65,45 @@ def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
     X_test = pd.DataFrame(X_test_scaled, index=X_test.index, columns=X_test.columns)
 
     return X_train, X_test, y_train, y_test
+
+###############################
+
+def sarimax_model_selection(y_train, X_train, y_test, X_test, p, d, q, P, D, Q, s):
+    """
+    Fits a SARIMAX model with the given parameters and returns the RMSE on the test set.
+
+    Parameters:
+    - y_train: training target series.
+    - X_train: training exogenous variables (if any).
+    - y_test: testing target series.
+    - X_test: testing exogenous variables (if any).
+    - p: AR order for non-seasonal model.
+    - d: Differencing order for non-seasonal model.
+    - q: MA order for non-seasonal model.
+    - P: AR order for seasonal model.
+    - D: Differencing order for seasonal model.
+    - Q: MA order for seasonal model.
+    - s: Number of observations per season (seasonal periodicity).
+
+    Returns:
+    - rmse: Root Mean Square Error of the model's forecast on the test set.
+    - results: Fitted SARIMAX model object containing detailed diagnostic information about the model.
+    - forecast: Forecast object containing information like predicted values, confidence intervals, etc.,
+    for the test set.
+    - mean_forecast: Array of predicted mean values from the forecast, which can be directly 
+    compared to y_test for evaluation.
+
+    """
+    model = SARIMAX(y_train,
+                    exog=X_train,
+                    order=(p, d, q),
+                    seasonal_order=(P, D, Q, s),
+                    enforce_stationarity=False,
+                    enforce_invertibility=False)
+    results = model.fit(disp=False)
+
+    forecast = results.get_forecast(steps=len(y_test), exog=X_test)
+    mean_forecast = forecast.predicted_mean
+
+    rmse = mean_squared_error(y_test, mean_forecast, squared=False)
+    return rmse, results, forecast, mean_forecast
