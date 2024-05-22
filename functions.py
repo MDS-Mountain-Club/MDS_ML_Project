@@ -1,11 +1,13 @@
 # Import libraries
 from sklearn.metrics import mean_squared_error, root_mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error, PredictionErrorDisplay
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
+from collections import defaultdict
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -52,9 +54,6 @@ def hist_text(ax, x_loc, y_loc, col, deci, size, full=True, title=''):
         median = {round(col.median(), deci)}
         std = {round(col.std(), deci)}''', size=size)
 
-#################################
-
-
 def box_text(ax, x_loc, y_loc, col, deci, size, title=''):
     '''Prints box plot statistics onto subplot.
      Adapted from https://github.com/lonnychen/necta-psle-dashboard.
@@ -76,10 +75,9 @@ def box_text(ax, x_loc, y_loc, col, deci, size, title=''):
 
 #################################
 
-# Split the data into train and test based on specific time
-
 
 def split_by_date(X, train_end_date):
+    '''Split the data into train and test based on specific time'''
     if not isinstance(train_end_date, pd.Timestamp):
         train_end_date = pd.Timestamp(train_end_date)
 
@@ -91,9 +89,6 @@ def split_by_date(X, train_end_date):
     X_test = X[X.index > train_end_date]
     return X_train, X_test
 
-
-###############################
-
 def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
     # Add a column with the label shifted by "hours" rows
 
@@ -103,19 +98,6 @@ def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
         df['label_shifted'] = df[label].shift(-hours_ahead)
         # Drop the last "hours" rows as they have no label values
         df = df.iloc[:-hours_ahead]
-
-    def split_by_date(X, train_end_date):
-        if not isinstance(train_end_date, pd.Timestamp):
-            train_end_date = pd.Timestamp(train_end_date)
-
-        # Convert index of X and y to Timestamp objects if they are strings
-        if isinstance(X.index[0], str):
-            X.index = pd.to_datetime(X.index)
-
-        X_train = X[X.index <= train_end_date]
-        X_test = X[X.index > train_end_date]
-
-        return X_train, X_test
 
     X = df.drop(columns=columns_drop + ['label_shifted'])
     y = df['label_shifted']
@@ -149,9 +131,6 @@ def add_model_eval(model_eval_in, model_name, y_test, y_pred):
                                   'MAPE': mean_absolute_percentage_error(y_test, y_pred)}
     return model_eval_out
 
-###############################
-
-
 def model_eval_plot(y_true, y_pred, fig, axes, title=''):
     '''Plots key regression plots'''
 
@@ -174,9 +153,54 @@ def model_eval_plot(y_true, y_pred, fig, axes, title=''):
     fig.suptitle(title)
     plt.tight_layout()
     plt.show()
+    
+def alpha_scores_cross_val(Model, X, y, cv, alphas, scoring='neg_mean_squared_error'):
+    '''Helper function to get cross-validated alphas scores on a regression model'''
+    
+    # Setup alphas
+    scores = defaultdict(list)
+    scores['alphas'] = alphas
+    
+    # Alpha parameter loop
+    for alpha in scores['alphas']:
+        # Do CV with regression model
+        model = Model(alpha=alpha)
+        cv_scores = cross_val_score(model, X, y, cv=cv, scoring=scoring)
 
-###############################
+        # Per-alpha: calculate scores average and SE
+        scores['avg_mse'].append(-1 * np.mean(cv_scores))
+        scores['std_errors'].append(np.std(cv_scores) / np.sqrt(len(cv_scores)))
+        
+    return scores
 
+def best_alpha_one_se_rule(scores_dict):
+    '''Helper function to find the best alpha using the One-Standard-Error rule'''
+    scores_df = pd.DataFrame(scores_dict)
+    within_one_std = scores_df['avg_mse'].min() + scores_df['std_errors'][scores_df['avg_mse'].idxmin()]
+    best_alpha = max([scores_df['alphas'][i] for i, mse in enumerate(scores_df['avg_mse']) if mse <= within_one_std])
+    return best_alpha, within_one_std
+
+def plot_mse_vs_alphas(alphas, avg_mse, std_errors, best_alpha=None, within_one_std=None, title=''):
+    '''Helper function to plot MSE vs. alpha parameters with standard errors,
+       and optionally vertical and horizontal lines'''
+    
+    # Plotting MSE vs Alpha with standard error bars
+    fig, axes = plt.subplots(figsize=(8, 4))
+    plt.errorbar(alphas, avg_mse, yerr=std_errors, fmt='-o', ecolor='gray', capsize=5, capthick=2, label='MSE with Standard Errors')
+
+    # Alpha and MSE lines for chosen point
+    if best_alpha:
+        plt.axvline(x=best_alpha, color='red', linestyle='--', label=f'Best Alpha: {round(best_alpha,4)}')
+    if within_one_std:
+        plt.axhline(y=within_one_std, color='green', linestyle='--', label=f'Min MSE + 1 Std Error: {round(within_one_std,4)}')
+
+    # Plot customizations
+    plt.xlabel('Alpha')
+    plt.ylabel('Mean MSE')
+    plt.xscale('log')  # Alpha values are on a logarithmic scale
+    plt.title(title)
+    plt.legend()
+    plt.show()
 
 def regression_coef_plot(model, fig, axes, filter_val=0, title=''):
     '''Plots regression coefficients plot'''
@@ -192,9 +216,10 @@ def regression_coef_plot(model, fig, axes, filter_val=0, title=''):
     plt.xlim([-1, len(ols_coef_sorted)])
     plt.xlabel('')
 
+
 ###############################
-
-
+    
+    
 def polynomial_terms(df_in, features_in, max_degree):
     '''Creates polynomial terms for input list of features and degrees'''
     df_out = df_in.copy()
@@ -207,18 +232,7 @@ def polynomial_terms(df_in, features_in, max_degree):
     return df_out
 
 
-def split_by_date(X, train_end_date):
-    if not isinstance(train_end_date, pd.Timestamp):
-        train_end_date = pd.Timestamp(train_end_date)
-
-    # Convert index of X and y to Timestamp objects if they are strings
-    if isinstance(X.index[0], str):
-        X.index = pd.to_datetime(X.index)
-
-    X_train = X[X.index <= train_end_date]
-    X_test = X[X.index > train_end_date]
-
-    return X_train, X_test
+###############################
 
 
 def plot_true_pred(X_test, test_pred, test_true):
@@ -235,7 +249,6 @@ def plot_true_pred(X_test, test_pred, test_true):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-
 
 def split_array(X_arr, y_arr, n_hours):
     X, y = list(), list()
