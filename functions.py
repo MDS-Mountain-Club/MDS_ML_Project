@@ -89,8 +89,22 @@ def split_by_date(X, train_end_date):
     X_test = X[X.index > train_end_date]
     return X_train, X_test
 
+
+def split_by_date_and_standardize(X, train_end_date):
+    '''Run `split_by_date` then add standardize both datasets.
+       Returns DataFrames'''
+    X_train, X_test = split_by_date(X, train_end_date)
+    
+    # Standardize X variables. 
+    scaler = StandardScaler()
+    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), index=X_train.index, columns=X_train.columns)
+    X_test_scaled = pd.DataFrame(scaler.transform(X_test), index=X_test.index, columns=X_test.columns)
+    
+    return X_train_scaled, X_test_scaled
+
 def prep_split(df, columns_drop, label, train_end_date, hours_ahead):
-    # Add a column with the label shifted by "hours" rows
+    '''Add a column with the label shifted by "hours" rows.
+       No longer used.'''
 
     if hours_ahead == 0:
         df['label_shifted'] = df[label]
@@ -180,25 +194,26 @@ def best_alpha_one_se_rule(scores_dict):
     best_alpha = max([scores_df['alphas'][i] for i, mse in enumerate(scores_df['avg_mse']) if mse <= within_one_std])
     return best_alpha, within_one_std
 
-def plot_mse_vs_alphas(alphas, avg_mse, std_errors, best_alpha=None, within_one_std=None, title=''):
-    '''Helper function to plot MSE vs. alpha parameters with standard errors,
+def plot_mse_vs_parameter(parameters, avg_mse, std_errors, best_param=None, within_one_std=None, log_scale=True, param_name='Alpha', model_name='Default Model Name'):
+    '''Helper function to plot MSE vs. any varying parameter with standard errors,
        and optionally vertical and horizontal lines'''
     
-    # Plotting MSE vs Alpha with standard error bars
+    # Plotting MSE vs Parameter with standard error bars
     fig, axes = plt.subplots(figsize=(8, 4))
-    plt.errorbar(alphas, avg_mse, yerr=std_errors, fmt='-o', ecolor='gray', capsize=5, capthick=2, label='MSE with Standard Errors')
+    plt.errorbar(parameters, avg_mse, yerr=std_errors, fmt='-o', ecolor='gray', capsize=5, capthick=2, label='MSE with Standard Errors')
 
-    # Alpha and MSE lines for chosen point
-    if best_alpha:
-        plt.axvline(x=best_alpha, color='red', linestyle='--', label=f'Best Alpha: {round(best_alpha,4)}')
+    # Parameter and MSE lines for chosen point
+    if best_param:
+        plt.axvline(x=best_param, color='red', linestyle='--', label=f'Best {param_name}: {round(best_param,4)}')
     if within_one_std:
         plt.axhline(y=within_one_std, color='green', linestyle='--', label=f'Min MSE + 1 Std Error: {round(within_one_std,4)}')
 
     # Plot customizations
-    plt.xlabel('Alpha')
+    plt.xlabel(param_name)
     plt.ylabel('Mean MSE')
-    plt.xscale('log')  # Alpha values are on a logarithmic scale
-    plt.title(title)
+    if log_scale:
+        plt.xscale('log')  # Alpha values are on a logarithmic scale
+    plt.title(f'MSE vs. {param_name} for {model_name}')
     plt.legend()
     plt.show()
 
@@ -236,6 +251,7 @@ def polynomial_terms(df_in, features_in, max_degree):
 
 
 def plot_true_pred(X_test, test_pred, test_true):
+    '''Creates time-series plot of true and predicted values (y-axis) vs. time (x-axis)'''
     plt.figure(figsize=(10, 6))
     plt.plot(X_test.index, test_true, marker='o',
              color='blue', label='True Values')
@@ -251,6 +267,8 @@ def plot_true_pred(X_test, test_pred, test_true):
     plt.show()
 
 def split_array(X_arr, y_arr, n_hours):
+    ''' Splits array by number of hours parameter.
+       No longer used.'''
     X, y = list(), list()
     for window_start in range(len(X_arr)):
         past_end = window_start + n_hours
