@@ -1,5 +1,15 @@
 # ignore ALL hidden files and directories
 .*
+ARIMA/ARIMA Model.ipynb
+ARIMA/ARIMA_v2.ipynb
+ARIMA/Arima_v3.ipynb
+ARIMA/SARIMAX.ipynb
+ARIMA/Tuning SARIMAX.ipynb
+ARIMA/Tuning Sarimax2.ipynb
+ARIMA/Untitled.ipynb
+ARIMA/Untitled1.ipynb
+ARIMA/Untitled2.ipynb
+Dan_XGBoost.ipynb
 
 # keep this file itself!
 !/.gitignore
